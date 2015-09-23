@@ -175,53 +175,49 @@ def editor(post_id):
     cache = blogging_engine.cache
     if cache:
         _clear_cache(cache)
-    try:
-        with blogging_engine.blogger_permission.require():
-            post_processor = blogging_engine.post_processor
-            config = blogging_engine.config
-            storage = blogging_engine.storage
-            if request.method == 'POST':
-                form = BlogEditor(request.form)
-                if form.validate():
-                    post = storage.get_post_by_id(post_id)
-                    if (post is not None) and \
-                            (current_user.get_id() == post["user_id"]) and \
-                            (post["post_id"] == post_id):
-                        pass
-                    else:
-                        post = {}
-                    pid = _store_form_data(form, storage, current_user, post)
-                    flash("Blog posted successfully!", "info")
-                    slug = post_processor.create_slug(form.title.data)
-                    return redirect(url_for("blogging.page_by_id", post_id=pid,
-                                            slug=slug))
+    if _is_blogger():
+        post_processor = blogging_engine.post_processor
+        config = blogging_engine.config
+        storage = blogging_engine.storage
+        if request.method == 'POST':
+            form = BlogEditor(request.form)
+            if form.validate():
+                post = storage.get_post_by_id(post_id)
+                if (post is not None) and \
+                        (current_user.get_id() == post["user_id"]) and \
+                        (post["post_id"] == post_id):
+                    pass
                 else:
-                    flash("There were errors in blog submission", "warning")
-                    return render_template("blogging/editor.html", form=form,
-                                           post_id=post_id, config=config)
+                    post = {}
+                pid = _store_form_data(form, storage, current_user, post)
+                flash("Blog posted successfully!", "info")
+                slug = post_processor.create_slug(form.title.data)
+                return redirect(url_for("blogging.page_by_id", post_id=pid,
+                                        slug=slug))
             else:
-                if post_id is not None:
-                    post = storage.get_post_by_id(post_id)
-                    if (post is not None) and \
-                            (current_user.get_id() == post["user_id"]):
-                        tags = ", ".join(post["tags"])
-                        form = BlogEditor(title=post["title"],
-                                          text=post["text"], tags=tags)
-                        return render_template("blogging/editor.html",
-                                               form=form, post_id=post_id,
-                                               config=config)
-                    else:
-                        flash("You do not have the rights to edit this post",
-                              "warning")
-                        return redirect(url_for("blogging.index",
-                                                post_id=None))
+                flash("There were errors in blog submission", "warning")
+                return render_template("blogging/editor.html", form=form,
+                                       post_id=post_id, config=config)
+        else:
+            if post_id is not None:
+                post = storage.get_post_by_id(post_id)
+                if (post is not None) and \
+                        (current_user.get_id() == post["user_id"]):
+                    tags = ", ".join(post["tags"])
+                    form = BlogEditor(title=post["title"],
+                                      text=post["text"], tags=tags)
+                    return render_template("blogging/editor.html",
+                                           form=form, post_id=post_id,
+                                           config=config)
+                else:
+                    flash("You do not have the rights to edit this post",
+                          "warning")
+                    return redirect(url_for("blogging.index",
+                                            post_id=None))
 
-            form = BlogEditor()
-            return render_template("blogging/editor.html", form=form,
-                                   post_id=post_id, config=config)
-    except PermissionDenied:
-        flash("You do not have permissions to create or edit posts", "warning")
-        return redirect(url_for("blogging.index", post_id=None))
+        form = BlogEditor()
+        return render_template("blogging/editor.html", form=form,
+                               post_id=post_id, config=config)
 
 
 @login_required
@@ -230,26 +226,23 @@ def delete(post_id):
     cache = blogging_engine.cache
     if cache:
         _clear_cache(cache)
-    try:
-        with blogging_engine.blogger_permission.require():
-            storage = blogging_engine.storage
-            post = storage.get_post_by_id(post_id)
-            if (post is not None) and \
-                    (current_user.get_id() == post["user_id"]):
-                success = storage.delete_post(post_id)
-                if success:
-                    flash("Your post was successfully deleted", "info")
-                else:
-                    flash("There were errors while deleting your post",
-                          "warning")
-            else:
-                flash("You do not have the rights to delete this post",
-                      "warning")
-            return redirect(url_for("blogging.index"))
-    except PermissionDenied:
-        flash("You do not have permissions to delete posts", "warning")
-        return redirect(url_for("blogging.index", post_id=None))
 
+    if _is_blogger():
+        storage = blogging_engine.storage
+        post = storage.get_post_by_id(post_id)
+        if (post is not None) and \
+                (current_user.get_id() == post["user_id"]):
+            success = storage.delete_post(post_id)
+            if success:
+                flash("Your post was successfully deleted", "info")
+            else:
+                flash("There were errors while deleting your post",
+                      "warning")
+        else:
+            flash("You do not have the rights to delete this post",
+                  "warning")
+        return redirect(url_for("blogging.index"))
+    
 
 def sitemap():
     blogging_engine = _get_blogging_engine(current_app)
