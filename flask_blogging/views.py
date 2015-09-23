@@ -80,12 +80,9 @@ def _get_meta(storage, count, page, tag=None, user_id=None):
     return meta
 
 
-def _is_blogger(blogger_permission):
-    authenticated = current_user.is_authenticated() if \
-        callable(current_user.is_authenticated) \
-        else current_user.is_authenticated
-    is_blogger = authenticated and \
-        blogger_permission.require().can()
+def _is_blogger():
+    authenticated = current_user.is_authenticated() if callable(current_user.is_authenticated) else current_user.is_authenticated
+    is_blogger = authenticated and current_user.is_admin
     return is_blogger
 
 
@@ -104,7 +101,7 @@ def index(count, page):
 
     meta = _get_meta(storage, count, page)
     offset = meta["offset"]
-    meta["is_user_blogger"] = _is_blogger(blogging_engine.blogger_permission)
+    meta["is_user_blogger"] = _is_blogger()
 
     render = config.get("BLOGGING_RENDER_TEXT", True)
     posts = storage.get_posts(count=count, offset=offset, include_draft=False,
@@ -121,7 +118,7 @@ def page_by_id(post_id, slug):
     config = blogging_engine.config
     post = storage.get_post_by_id(post_id)
     meta = {}
-    meta["is_user_blogger"] = _is_blogger(blogging_engine.blogger_permission)
+    meta["is_user_blogger"] = _is_blogger()
 
     render = config.get("BLOGGING_RENDER_TEXT", True)
     if post is not None:
@@ -140,7 +137,7 @@ def posts_by_tag(tag, count, page):
     count = count or config.get("BLOGGING_POSTS_PER_PAGE", 10)
     meta = _get_meta(storage, count, page, tag=tag)
     offset = meta["offset"]
-    meta["is_user_blogger"] = _is_blogger(blogging_engine.blogger_permission)
+    meta["is_user_blogger"] = _is_blogger()
 
     render = config.get("BLOGGING_RENDER_TEXT", True)
     posts = storage.get_posts(count=count, offset=offset, tag=tag,
@@ -158,7 +155,7 @@ def posts_by_author(user_id, count, page):
     count = count or config.get("BLOGGING_POSTS_PER_PAGE", 10)
     meta = _get_meta(storage, count, page, user_id=user_id)
     offset = meta["offset"]
-    meta["is_user_blogger"] = _is_blogger(blogging_engine.blogger_permission)
+    meta["is_user_blogger"] = _is_blogger()
 
     posts = storage.get_posts(count=count, offset=offset, user_id=user_id,
                               include_draft=False, tag=None, recent=True)
@@ -297,7 +294,7 @@ def feed():
 def unless(blogging_engine):
     # disable caching for bloggers. They can change state!
     def _unless():
-        return _is_blogger(blogging_engine.blogger_permission)
+        return _is_blogger()
     return _unless
 
 
