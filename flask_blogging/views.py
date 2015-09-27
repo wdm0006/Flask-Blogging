@@ -242,7 +242,7 @@ def delete(post_id):
             flash("You do not have the rights to delete this post",
                   "warning")
         return redirect(url_for("blogging.index"))
-    
+
 
 def sitemap():
     blogging_engine = _get_blogging_engine(current_app)

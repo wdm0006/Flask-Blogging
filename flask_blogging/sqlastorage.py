@@ -197,7 +197,7 @@ class SQLAStorage(Storage):
                 if count:
                     select_statement = select_statement.limit(count)
                 if offset:
-                    select_statement = select_statement.offset(offset)
+                    select_statement = select_statement.offset(abs(offset))
 
                 select_statement = select_statement.order_by(ordering)
                 result = conn.execute(select_statement).fetchall()
